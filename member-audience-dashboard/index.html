@@ -37,17 +37,19 @@ html:not([data-portable-source-tooltips-ready]) .portable-chart-summary>.portabl
 :root{--pitch-navy:#17375e;--pitch-blue:#2f6f8f;--pitch-teal:#3fa39b;--pitch-orange:#df8a5b;--pitch-pink:#d5637f;--pitch-ink:#1c2836;--pitch-muted:#677484;--pitch-line:#e5eaf0;--pitch-bg:#f4f6f9}
 html,body{background:var(--pitch-bg)!important;color:var(--pitch-ink)!important;font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif!important}
 #data-analytics-portable-reader{display:none!important}.portable-fallback,.portable-fallback.portable-enhanced-hidden{display:block!important;visibility:visible!important;width:min(1180px,100%)!important;margin:0 auto!important;padding:24px 18px 64px!important}
-.portable-page-header{position:relative!important;top:auto!important;width:100%!important;height:auto!important;min-height:0!important;margin:0!important;padding:28px 32px!important;border:0!important;border-radius:22px!important;background:var(--pitch-navy)!important;color:#fff!important;box-shadow:0 14px 40px rgba(23,55,94,.16)!important}
+.portable-page-header{position:relative!important;top:auto!important;width:100%!important;height:auto!important;min-height:0!important;margin:0!important;padding:26px 30px!important;border:0!important;border-radius:20px!important;background:var(--pitch-navy)!important;color:#fff!important;box-shadow:0 12px 32px rgba(23,55,94,.13)!important}
 .portable-page-heading{min-width:0!important}.portable-surface-label{display:none!important}.portable-page-header h1{margin:0 0 6px!important;color:#fff!important;font-size:28px!important;font-weight:750!important;line-height:1.25!important;letter-spacing:.01em!important;white-space:normal!important}
 .portable-description{display:block!important;max-width:none!important;color:rgba(255,255,255,.76)!important;font-size:14px!important}.portable-page-meta{color:rgba(255,255,255,.74)!important;font-size:12px!important}
-.portable-block-stack{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:16px!important;margin-top:22px!important}.portable-layout-full{grid-column:1/-1!important}
+.portable-block-stack{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:14px!important;margin-top:20px!important}.portable-layout-full{grid-column:1/-1!important}
 .portable-markdown{max-width:none!important}.portable-markdown h2{margin:22px 0 2px!important;color:var(--pitch-navy)!important;font-size:15px!important;font-weight:800!important;letter-spacing:.11em!important}.portable-markdown p{margin:6px 0 0!important;color:var(--pitch-muted)!important;font-size:13px!important}
-.portable-content-card,.portable-metric-card{border:1px solid var(--pitch-line)!important;border-radius:16px!important;background:#fff!important;box-shadow:0 1px 2px rgba(20,30,45,.04),0 8px 24px rgba(20,30,45,.045)!important}
+.portable-content-card,.portable-metric-card{border:1px solid var(--pitch-line)!important;border-radius:16px!important;background:#fff!important;box-shadow:0 1px 2px rgba(20,30,45,.035),0 7px 20px rgba(20,30,45,.04)!important}
 .portable-content-card{padding:18px 20px!important}.portable-metric-grid{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))!important;gap:12px!important}.portable-metric-card{min-height:132px!important;padding:18px 20px!important}
 [data-artifact-block-id="headline_metrics"] .portable-metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;align-items:stretch!important}
-[data-artifact-block-id="headline_metrics"] .portable-metric-card{box-sizing:border-box!important;min-height:164px!important;height:100%!important;border-top:4px solid var(--pitch-teal)!important}
-[data-artifact-block-id="headline_metrics"] .portable-source-tooltip{cursor:default!important;text-decoration:none!important}
-[data-artifact-block-id="headline_metrics"] .portable-source-tooltip-content{display:none!important}
+[data-artifact-block-id="headline_metrics"] .portable-metric-card{display:flex!important;box-sizing:border-box!important;min-height:148px!important;height:100%!important;flex-direction:column!important;border-top:3px solid var(--pitch-teal)!important}
+[data-artifact-block-id="headline_metrics"] .portable-metric-value{font-size:32px!important}
+[data-artifact-block-id="headline_metrics"] .portable-metric-badges{margin-top:auto!important;padding-top:10px!important}
+.portable-metric-value .portable-source-tooltip{cursor:default!important;text-decoration:none!important}
+.portable-metric-value .portable-source-tooltip-content{display:none!important}
 .portable-metric-label{color:var(--pitch-muted)!important;font-size:13px!important}.portable-metric-value{margin-top:8px!important;color:var(--pitch-navy)!important;font-size:30px!important;font-weight:800!important;line-height:1.05!important}.portable-card-description{display:block!important;margin-top:9px!important;color:var(--pitch-muted)!important;font-size:11.5px!important}.portable-metric-badges{margin-top:9px!important}.portable-metric-badge{border:0!important;background:#edf4f7!important;color:var(--pitch-blue)!important}
 .portable-metric-badge:has(.portable-source-tooltip){cursor:help}.portable-metric-badge:hover .portable-source-tooltip-content,.portable-metric-badge:focus-within .portable-source-tooltip-content{display:block!important;opacity:1!important;visibility:visible!important}.metric-note-line{display:block;margin-top:4px;color:rgba(255,255,255,.82)!important}.metric-note-caveat{display:block;margin-top:7px;padding-top:7px;border-top:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.68)!important}
 [data-card-id="premium_rights_card"],[data-card-id="family_core_card"]{border-top:4px solid var(--pitch-orange)!important}
@@ -84,8 +86,10 @@ document.addEventListener('DOMContentLoaded', function () {
     var tooltip = document.querySelector('[data-card-id="' + cardId + '"] .portable-metric-badge .portable-source-tooltip-content');
     if (tooltip) tooltip.innerHTML = content;
   }
+  replaceMetricTooltip('member_1y_active_card', '<strong>近一年活躍率 15.0%</strong><span class="metric-note-line">分子：截至 8/23 近一年活躍會員 206,896</span><span class="metric-note-line">分母：截至 8/23 會員總數 1,377,770</span><span class="metric-note-line">計算：206,896 ÷ 1,377,770＝15.0%</span>');
+  replaceMetricTooltip('member_mau_card', '<strong>月活躍率 4.9%</strong><span class="metric-note-line">分子：2026/7 月活躍會員 67,146</span><span class="metric-note-line">分母：2026/8/23 會員總數 1,377,770</span><span class="metric-note-line">計算：67,146 ÷ 1,377,770＝4.9%</span><span class="metric-note-caveat">目前分子與分母時點不同，待取得 7 月底會員總數後校準。</span>');
   replaceMetricTooltip('premium_rights_card', '<strong>近90天服務使用率 21.4%</strong><span class="metric-note-line">分子：近90天進入 Premium 站且排除文章頁的會員 4,166</span><span class="metric-note-line">分母：2026/8/17 AIRIS 固定 Premium 母體 19,422</span><span class="metric-note-line">計算：4,166 ÷ 19,422＝21.4%</span>');
-  document.querySelectorAll('[data-artifact-block-id="headline_metrics"] .portable-source-tooltip').forEach(function (tooltip) {
+  document.querySelectorAll('.portable-metric-value .portable-source-tooltip').forEach(function (tooltip) {
     var value = tooltip.querySelector('.portable-source-value-text');
     if (value) tooltip.replaceWith(value);
   });
