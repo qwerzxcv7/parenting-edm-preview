@@ -198,7 +198,7 @@ document.addEventListener('DOMContentLoaded', function () {
         active.forEach(function (definition) { value *= selectedCount(definition.key) / total; });
         value = roundEstimate(value);
         status = '方向性推估';
-        note = '依各條件占全會員的比例相乘估算，未使用交叉明細；正式交叉人數與可觸達名單請以 AIDA 為準。';
+        note = '依各條件占全會員的比例相乘估算；此數量尚未排除不可行銷名單與黑名單，實際可觸達名單請以 AIDA 為準。';
       }
       var selected = [];
       definitions.forEach(function (definition) { state[definition.key].forEach(function (option) { selected.push(option); }); });
