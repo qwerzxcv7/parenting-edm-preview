@@ -51,7 +51,7 @@ html,body{background:var(--pitch-bg)!important;color:var(--pitch-ink)!important;
 [data-card-id="female_share_card"]{border-top:4px solid var(--pitch-blue)!important}
 .portable-visual-header{margin-bottom:12px!important}.portable-visual-header>strong{color:var(--pitch-ink)!important;font-size:15px!important;font-weight:750!important}.portable-visual-header>span{margin-top:3px!important;color:var(--pitch-muted)!important;font-size:11.5px!important;line-height:1.45!important}
 .portable-static-chart{padding-top:4px!important}.portable-static-chart svg{max-height:300px!important}.portable-chart-data,.portable-inline-source,.portable-sources,.portable-notice{display:none!important}
-.pitch-bars{display:grid;gap:10px;margin-top:14px}.pitch-legend{display:flex;flex-wrap:wrap;gap:12px;margin:-2px 0 4px;color:var(--pitch-muted);font-size:11px}.pitch-legend span{display:inline-flex;align-items:center;gap:6px}.pitch-legend i{width:9px;height:9px;border-radius:50%}.pitch-bar-row{display:grid;grid-template-columns:minmax(68px,110px) 1fr;gap:10px;align-items:start}.pitch-bar-label{padding-top:3px;color:var(--pitch-ink);font-size:12px;font-weight:650;line-height:1.35}.pitch-bar-series{display:grid;gap:5px}.pitch-bar-line{display:grid;grid-template-columns:minmax(0,1fr) 48px;gap:8px;align-items:center}.pitch-bar-track{position:relative;height:12px;overflow:hidden;border-radius:999px;background:#eef2f5}.pitch-bar-fill{height:100%;min-width:3px;border-radius:999px;background:var(--pitch-blue)}.pitch-bar-value{color:var(--pitch-muted);font-size:11px;font-variant-numeric:tabular-nums;text-align:right}.pitch-source-table{display:none!important}
+.pitch-bars{display:grid;gap:10px;margin-top:14px}.pitch-legend{display:flex;flex-wrap:wrap;gap:12px;margin:-2px 0 4px;color:var(--pitch-muted);font-size:11px}.pitch-legend span{display:inline-flex;align-items:center;gap:6px}.pitch-legend i{width:9px;height:9px;border-radius:50%}.pitch-bar-row{display:grid;grid-template-columns:minmax(68px,110px) 1fr;gap:10px;align-items:start}.pitch-bar-label{padding-top:3px;color:var(--pitch-ink);font-size:12px;font-weight:650;line-height:1.35}.pitch-bar-series{display:grid;gap:5px}.pitch-bar-line{position:relative;display:grid;grid-template-columns:minmax(0,1fr) 48px;gap:8px;align-items:center}.pitch-bar-line.has-data-note{cursor:help}.pitch-bar-line.has-data-note:focus{outline:2px solid rgba(47,111,143,.28);outline-offset:3px;border-radius:5px}.pitch-bar-track{position:relative;height:12px;overflow:hidden;border-radius:999px;background:#eef2f5}.pitch-bar-fill{height:100%;min-width:3px;border-radius:999px;background:var(--pitch-blue)}.pitch-bar-value{color:var(--pitch-muted);font-size:11px;font-variant-numeric:tabular-nums;text-align:right}.pitch-bar-tooltip{position:absolute;left:0;bottom:calc(100% + 8px);z-index:20;display:none;width:min(310px,calc(100vw - 56px));padding:12px 14px;border-radius:10px;background:#17375e;color:#fff;font-size:11px;line-height:1.55;box-shadow:0 10px 28px rgba(23,55,94,.25)}.pitch-bar-tooltip strong{display:block;margin-bottom:5px;font-size:12px}.pitch-bar-tooltip span{display:block;color:rgba(255,255,255,.82)}.pitch-bar-tooltip .pitch-tooltip-caveat{margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,.18);color:rgba(255,255,255,.68)}.pitch-bar-line.has-data-note:hover .pitch-bar-tooltip,.pitch-bar-line.has-data-note:focus .pitch-bar-tooltip{display:block}.pitch-source-table{display:none!important}
 [data-artifact-block-id="scale_heading"] .portable-markdown h2{margin-top:4px!important}
 [data-artifact-block-id="all_profile_heading"],[data-artifact-block-id="family_heading"],[data-artifact-block-id="premium_heading"],[data-artifact-block-id="calculator_heading"],[data-artifact-block-id="aida_heading"]{margin-top:12px!important;padding-top:4px!important;border-top:1px solid var(--pitch-line)!important}
 [data-artifact-block-id="premium_heading"]{margin-top:22px!important;padding:0!important;border:0!important}
@@ -93,6 +93,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!rows.length) return;
     var seriesIndex = headers.findIndex(function (h) { return h === '受眾'; });
     var valueIndex = headers.findIndex(function (h) { return /占比|人數/.test(h); });
+    var activeUsersIndex = headers.findIndex(function (h) { return h === '區域活躍會員數'; });
+    var audienceTotalIndex = headers.findIndex(function (h) { return h === '該受眾活躍會員總數'; });
     if (valueIndex < 0) valueIndex = 1;
     var grouped = {};
     rows.forEach(function (cells) {
@@ -101,7 +103,13 @@ document.addEventListener('DOMContentLoaded', function () {
       var display = cells[valueIndex];
       var numeric = display.indexOf('%') >= 0 ? parseFloat(display) : parseFloat(display.replace(/,/g,''));
       if (!grouped[category]) grouped[category] = [];
-      grouped[category].push({ series: series, display: display, numeric: isFinite(numeric) ? numeric : 0 });
+      grouped[category].push({
+        series: series,
+        display: display,
+        numeric: isFinite(numeric) ? numeric : 0,
+        activeUsers: activeUsersIndex >= 0 ? cells[activeUsersIndex] : '',
+        audienceTotal: audienceTotalIndex >= 0 ? cells[audienceTotalIndex] : ''
+      });
     });
     var all = Object.keys(grouped).reduce(function (acc, key) { return acc.concat(grouped[key]); }, []);
     var max = Math.max.apply(null, all.map(function (d) { return d.numeric; }).concat([1]));
@@ -123,7 +131,20 @@ document.addEventListener('DOMContentLoaded', function () {
         var track=document.createElement('div'); track.className='pitch-bar-track';
         var fill=document.createElement('div'); fill.className='pitch-bar-fill'; fill.style.width=Math.max(1.5,d.numeric/max*100)+'%'; fill.style.background=palette[(d.series?seriesNames.indexOf(d.series):i)%palette.length];
         var value=document.createElement('div'); value.className='pitch-bar-value'; value.textContent=d.display;
-        track.appendChild(fill); line.appendChild(track); line.appendChild(value); list.appendChild(line);
+        track.appendChild(fill); line.appendChild(track); line.appendChild(value);
+        if (d.activeUsers && d.audienceTotal) {
+          line.classList.add('has-data-note');
+          line.tabIndex = 0;
+          line.setAttribute('aria-label', category + ' ' + d.series + '：' + d.activeUsers + ' 人，占 ' + d.audienceTotal + ' 人的 ' + d.display);
+          var tooltip=document.createElement('div'); tooltip.className='pitch-bar-tooltip';
+          var tooltipTitle=document.createElement('strong'); tooltipTitle.textContent=category + '｜' + d.series;
+          var numerator=document.createElement('span'); numerator.textContent='分子：此區域活躍會員 ' + d.activeUsers + ' 人';
+          var denominator=document.createElement('span'); denominator.textContent='分母：該受眾近30天活躍會員 ' + d.audienceTotal + ' 人';
+          var calculation=document.createElement('span'); calculation.textContent='計算：' + d.activeUsers + ' ÷ ' + d.audienceTotal + '＝' + d.display;
+          var caveat=document.createElement('span'); caveat.className='pitch-tooltip-caveat'; caveat.textContent='GA 依期間內使用行為推估地區，並非會員登記地址。';
+          tooltip.appendChild(tooltipTitle); tooltip.appendChild(numerator); tooltip.appendChild(denominator); tooltip.appendChild(calculation); tooltip.appendChild(caveat); line.appendChild(tooltip);
+        }
+        list.appendChild(line);
       });
       row.appendChild(list); root.appendChild(row);
     });
@@ -284,7 +305,7 @@ document.addEventListener('DOMContentLoaded', function () {
 <div class="portable-block portable-layout-half" data-artifact-block-id="all_gender_block" data-artifact-block-type="chart" data-layout="half"><figure class="portable-content-card portable-chart-summary" data-artifact-id="all_gender" data-artifact-kind="chart" data-chart-id="all_gender" data-portable-visual-title="性別" data-portable-source-host="true" tabindex="0" aria-label="性別" aria-describedby="portable-source-tooltip-9"><figcaption class="portable-visual-header"><strong>性別</strong><span>已填資料 n=536,437</span></figcaption><div class="portable-inline-source" data-source-id="member_profile"><div class="portable-inline-source-content portable-source-tooltip-content" id="portable-source-tooltip-9" role="tooltip"><span class="portable-source-tooltip-heading" aria-hidden="true">Source for 性別</span><strong>Source: 親子會員樣貌 Dashboard｜Profile</strong><span class="portable-source-meta">Table: member_profile</span><p class="portable-source-description-data">2026/8/20 會員樣貌快照；輪廓比例以各維度有效資料為分母。</p><pre class="portable-source-query-data" aria-hidden="true"><code>SELECT metric, category, value FROM (VALUES (&#39;member_total&#39;,&#39;all&#39;,1377564),(&#39;gender&#39;,&#39;female&#39;,444270),(&#39;gender&#39;,&#39;male&#39;,92167),(&#39;age&#39;,&#39;18-24&#39;,3849),(&#39;age&#39;,&#39;25-34&#39;,34472),(&#39;age&#39;,&#39;35-44&#39;,183501),(&#39;age&#39;,&#39;45-54&#39;,198198),(&#39;age&#39;,&#39;55-64&#39;,49078),(&#39;age&#39;,&#39;65+&#39;,48620),(&#39;child_count&#39;,&#39;1&#39;,188321),(&#39;child_count&#39;,&#39;2&#39;,181097),(&#39;child_count&#39;,&#39;3+&#39;,31217),(&#39;child_count&#39;,&#39;none&#39;,81282)) AS profile(metric, category, value)</code></pre></div></div><div class="portable-table-scroll"><table><caption>性別 data</caption><thead><tr><th scope="col">性別</th><th scope="col" class="portable-table-number">占比</th><th scope="col" class="portable-table-number">人數</th></tr></thead><tbody><tr><td>女性</td><td class="portable-table-number">82.8%</td><td class="portable-table-number">444,270</td></tr><tr><td>男性</td><td class="portable-table-number">17.2%</td><td class="portable-table-number">92,167</td></tr></tbody></table></div></figure></div>
 <div class="portable-block portable-layout-half" data-artifact-block-id="all_age_block" data-artifact-block-type="chart" data-layout="half"><figure class="portable-content-card portable-chart-summary" data-artifact-id="all_age" data-artifact-kind="chart" data-chart-id="all_age" data-portable-visual-title="會員年齡" data-portable-source-host="true" tabindex="0" aria-label="會員年齡" aria-describedby="portable-source-tooltip-10"><figcaption class="portable-visual-header"><strong>會員年齡</strong><span>35–54歲占已填資料73.7%</span></figcaption><div class="portable-inline-source" data-source-id="member_profile"><div class="portable-inline-source-content portable-source-tooltip-content" id="portable-source-tooltip-10" role="tooltip"><span class="portable-source-tooltip-heading" aria-hidden="true">Source for 會員年齡</span><strong>Source: 親子會員樣貌 Dashboard｜Profile</strong><span class="portable-source-meta">Table: member_profile</span><p class="portable-source-description-data">2026/8/20 會員樣貌快照；輪廓比例以各維度有效資料為分母。</p><pre class="portable-source-query-data" aria-hidden="true"><code>SELECT metric, category, value FROM (VALUES (&#39;member_total&#39;,&#39;all&#39;,1377564),(&#39;gender&#39;,&#39;female&#39;,444270),(&#39;gender&#39;,&#39;male&#39;,92167),(&#39;age&#39;,&#39;18-24&#39;,3849),(&#39;age&#39;,&#39;25-34&#39;,34472),(&#39;age&#39;,&#39;35-44&#39;,183501),(&#39;age&#39;,&#39;45-54&#39;,198198),(&#39;age&#39;,&#39;55-64&#39;,49078),(&#39;age&#39;,&#39;65+&#39;,48620),(&#39;child_count&#39;,&#39;1&#39;,188321),(&#39;child_count&#39;,&#39;2&#39;,181097),(&#39;child_count&#39;,&#39;3+&#39;,31217),(&#39;child_count&#39;,&#39;none&#39;,81282)) AS profile(metric, category, value)</code></pre></div></div><div class="portable-table-scroll"><table><caption>會員年齡 data</caption><thead><tr><th scope="col">年齡</th><th scope="col" class="portable-table-number">占比</th><th scope="col" class="portable-table-number">人數</th></tr></thead><tbody><tr><td>18–24</td><td class="portable-table-number">0.7%</td><td class="portable-table-number">3,849</td></tr><tr><td>25–34</td><td class="portable-table-number">6.7%</td><td class="portable-table-number">34,472</td></tr><tr><td>35–44</td><td class="portable-table-number">35.4%</td><td class="portable-table-number">183,501</td></tr><tr><td>45–54</td><td class="portable-table-number">38.3%</td><td class="portable-table-number">198,198</td></tr><tr><td>55–64</td><td class="portable-table-number">9.5%</td><td class="portable-table-number">49,078</td></tr><tr><td>65+</td><td class="portable-table-number">9.4%</td><td class="portable-table-number">48,620</td></tr></tbody></table></div></figure></div>
 <div class="portable-block portable-layout-full" data-artifact-block-id="all_occupation_block" data-artifact-block-type="chart" data-layout="full"><figure class="portable-content-card portable-chart-summary" data-artifact-id="all_occupation" data-artifact-kind="chart" data-chart-id="all_occupation" data-portable-visual-title="職業類型 Top 10" data-portable-source-host="true" tabindex="0" aria-label="職業類型 Top 10" aria-describedby="portable-source-tooltip-11"><figcaption class="portable-visual-header"><strong>職業類型 Top 10</strong><span>依可辨識類別排列；「其他」固定置底，來源未提供細項，暫無法正確列舉</span></figcaption><div class="portable-inline-source" data-source-id="member_profile"><div class="portable-inline-source-content portable-source-tooltip-content" id="portable-source-tooltip-11" role="tooltip"><span class="portable-source-tooltip-heading" aria-hidden="true">Source for 職業類型 Top 10</span><strong>Source: 親子會員樣貌 Dashboard｜Profile</strong><span class="portable-source-meta">Table: member_profile</span><p class="portable-source-description-data">2026/8/20 會員樣貌快照；輪廓比例以各維度有效資料為分母。</p><pre class="portable-source-query-data" aria-hidden="true"><code>SELECT metric, category, value FROM (VALUES (&#39;member_total&#39;,&#39;all&#39;,1377564),(&#39;gender&#39;,&#39;female&#39;,444270),(&#39;gender&#39;,&#39;male&#39;,92167),(&#39;age&#39;,&#39;18-24&#39;,3849),(&#39;age&#39;,&#39;25-34&#39;,34472),(&#39;age&#39;,&#39;35-44&#39;,183501),(&#39;age&#39;,&#39;45-54&#39;,198198),(&#39;age&#39;,&#39;55-64&#39;,49078),(&#39;age&#39;,&#39;65+&#39;,48620),(&#39;child_count&#39;,&#39;1&#39;,188321),(&#39;child_count&#39;,&#39;2&#39;,181097),(&#39;child_count&#39;,&#39;3+&#39;,31217),(&#39;child_count&#39;,&#39;none&#39;,81282)) AS profile(metric, category, value)</code></pre></div></div><div class="portable-table-scroll"><table><caption>職業類型 Top 10 data</caption><thead><tr><th scope="col">職業</th><th scope="col" class="portable-table-number">人數</th></tr></thead><tbody><tr><td>教育服務業</td><td class="portable-table-number">36,246</td></tr><tr><td>學生</td><td class="portable-table-number">29,007</td></tr><tr><td>公職人員</td><td class="portable-table-number">27,363</td></tr><tr><td>家管</td><td class="portable-table-number">24,996</td></tr><tr><td>服務業</td><td class="portable-table-number">20,046</td></tr><tr><td>製造業</td><td class="portable-table-number">14,510</td></tr><tr><td>資訊科技業</td><td class="portable-table-number">11,689</td></tr><tr><td>醫療保健</td><td class="portable-table-number">10,131</td></tr><tr><td>金融業</td><td class="portable-table-number">8,772</td></tr><tr><td>其他</td><td class="portable-table-number">37,728</td></tr></tbody></table></div></figure></div>
-<div class="portable-block portable-layout-half" data-artifact-block-id="region_block" data-artifact-block-type="chart" data-layout="half"><figure class="portable-content-card portable-chart-summary" data-artifact-id="region_comparison" data-artifact-kind="chart" data-chart-id="region_comparison" data-portable-visual-title="主要活躍地區" data-portable-source-host="true" tabindex="0" aria-label="主要活躍地區" aria-describedby="portable-source-tooltip-12"><figcaption class="portable-visual-header"><strong>主要活躍地區</strong><span>最近30天官網活躍者（7/25–8/23）；同一使用者可能跨地區重複</span></figcaption><div class="portable-inline-source" data-source-id="ga_region_30d"><div class="portable-inline-source-content portable-source-tooltip-content" id="portable-source-tooltip-12" role="tooltip"><span class="portable-source-tooltip-heading" aria-hidden="true">Source for 主要活躍地區</span><strong>Source: 親子官網 GA4｜客層詳情：區域</strong><span class="portable-source-meta">Table: GA4 user-demographics-detail</span><p class="portable-source-description-data">GA4過去30天完整區間；區間終點為GA可用的最新完整日。</p><pre class="portable-source-query-data" aria-hidden="true"><code>SELECT region, audience, active_users FROM ga4_user_demographics_detail WHERE event_date BETWEEN DATE &#39;2026-07-25&#39; AND DATE &#39;2026-08-23&#39; AND audience IN (&#39;all_users&#39;,&#39;premium_member&#39;)</code></pre></div></div><div class="portable-table-scroll"><table><caption>主要活躍地區 data</caption><thead><tr><th scope="col">地區</th><th scope="col" class="portable-table-number">觸及占比</th><th scope="col">受眾</th></tr></thead><tbody><tr><td>台北市</td><td class="portable-table-number">18.4%</td><td>所有使用者</td></tr><tr><td>台北市</td><td class="portable-table-number">35.5%</td><td>Premium會員</td></tr><tr><td>新北市</td><td class="portable-table-number">10.7%</td><td>所有使用者</td></tr><tr><td>新北市</td><td class="portable-table-number">19.7%</td><td>Premium會員</td></tr><tr><td>高雄市</td><td class="portable-table-number">13.2%</td><td>所有使用者</td></tr><tr><td>高雄市</td><td class="portable-table-number">17%</td><td>Premium會員</td></tr><tr><td>桃園市</td><td class="portable-table-number">10.1%</td><td>所有使用者</td></tr><tr><td>桃園市</td><td class="portable-table-number">16%</td><td>Premium會員</td></tr><tr><td>台中市</td><td class="portable-table-number">11.8%</td><td>所有使用者</td></tr><tr><td>台中市</td><td class="portable-table-number">13%</td><td>Premium會員</td></tr></tbody></table></div></figure></div>
+<div class="portable-block portable-layout-half" data-artifact-block-id="region_block" data-artifact-block-type="chart" data-layout="half"><figure class="portable-content-card portable-chart-summary" data-artifact-id="region_comparison" data-artifact-kind="chart" data-chart-id="region_comparison" data-portable-visual-title="近30天會員主要活躍地區" data-portable-source-host="true" tabindex="0" aria-label="近30天會員主要活躍地區" aria-describedby="portable-source-tooltip-12"><figcaption class="portable-visual-header"><strong>近30天會員主要活躍地區</strong><span>7/25–8/23；全會員取自全站台 GA Member 目標對象，Premium 取自親子官網 GA</span></figcaption><div class="portable-inline-source" data-source-id="ga_member_region_30d"><div class="portable-inline-source-content portable-source-tooltip-content" id="portable-source-tooltip-12" role="tooltip"><span class="portable-source-tooltip-heading" aria-hidden="true">Source for 近30天會員主要活躍地區</span><strong>Source: GA4｜全站台 Member 與親子官網 Premium 活躍區域</strong><span class="portable-source-meta">Tables: GA4 p265510670 user-demographics-detail, GA4 p257320059 user-demographics-detail</span><p class="portable-source-description-data">2026/7/25–8/23；全會員活躍者來自全站台 GA Member 目標對象，Premium活躍者來自親子官網 GA Premium 身分比較。</p><pre class="portable-source-query-data" aria-hidden="true"><code>SELECT region, &#39;member&#39; AS audience, active_users FROM ga4_fullsite_user_demographics_detail WHERE event_date BETWEEN DATE &#39;2026-07-25&#39; AND DATE &#39;2026-08-23&#39; AND audience_id=&#39;2&#39; UNION ALL SELECT region, &#39;premium&#39; AS audience, active_users FROM ga4_parenting_user_demographics_detail WHERE event_date BETWEEN DATE &#39;2026-07-25&#39; AND DATE &#39;2026-08-23&#39; AND member_status IN (&#39;premium_member&#39;,&#39;subscriber_member&#39;,&#39;subscriber_member_year&#39;,&#39;subscriber_member_month&#39;)</code></pre></div></div><div class="portable-table-scroll"><table><caption>近30天會員主要活躍地區 data</caption><thead><tr><th scope="col">地區</th><th scope="col" class="portable-table-number">活躍者占比</th><th scope="col">受眾</th><th scope="col" class="portable-table-number">區域活躍會員數</th><th scope="col" class="portable-table-number">該受眾活躍會員總數</th></tr></thead><tbody><tr><td>台北市</td><td class="portable-table-number">27.5%</td><td>全會員活躍者</td><td class="portable-table-number">16,949</td><td class="portable-table-number">61,566</td></tr><tr><td>台北市</td><td class="portable-table-number">35.6%</td><td>Premium活躍者</td><td class="portable-table-number">1,334</td><td class="portable-table-number">3,750</td></tr><tr><td>新北市</td><td class="portable-table-number">17.2%</td><td>全會員活躍者</td><td class="portable-table-number">10,614</td><td class="portable-table-number">61,566</td></tr><tr><td>新北市</td><td class="portable-table-number">19.7%</td><td>Premium活躍者</td><td class="portable-table-number">738</td><td class="portable-table-number">3,750</td></tr><tr><td>高雄市</td><td class="portable-table-number">18.2%</td><td>全會員活躍者</td><td class="portable-table-number">11,209</td><td class="portable-table-number">61,566</td></tr><tr><td>高雄市</td><td class="portable-table-number">17%</td><td>Premium活躍者</td><td class="portable-table-number">638</td><td class="portable-table-number">3,750</td></tr><tr><td>桃園市</td><td class="portable-table-number">15.8%</td><td>全會員活躍者</td><td class="portable-table-number">9,730</td><td class="portable-table-number">61,566</td></tr><tr><td>桃園市</td><td class="portable-table-number">16%</td><td>Premium活躍者</td><td class="portable-table-number">600</td><td class="portable-table-number">3,750</td></tr><tr><td>台中市</td><td class="portable-table-number">14.3%</td><td>全會員活躍者</td><td class="portable-table-number">8,778</td><td class="portable-table-number">61,566</td></tr><tr><td>台中市</td><td class="portable-table-number">13%</td><td>Premium活躍者</td><td class="portable-table-number">487</td><td class="portable-table-number">3,750</td></tr></tbody></table></div></figure></div>
 <div class="portable-block portable-layout-half" data-artifact-block-id="device_block" data-artifact-block-type="chart" data-layout="half"><figure class="portable-content-card portable-chart-summary" data-artifact-id="device_comparison" data-artifact-kind="chart" data-chart-id="device_comparison" data-portable-visual-title="造訪裝置" data-portable-source-host="true" tabindex="0" aria-label="造訪裝置" aria-describedby="portable-source-tooltip-13"><figcaption class="portable-visual-header"><strong>造訪裝置</strong><span>手機是主要入口；Premium桌機觸及亦高</span></figcaption><div class="portable-inline-source" data-source-id="ga_profile"><div class="portable-inline-source-content portable-source-tooltip-content" id="portable-source-tooltip-13" role="tooltip"><span class="portable-source-tooltip-heading" aria-hidden="true">Source for 造訪裝置</span><strong>Source: 親子官網 GA4｜客層與技術詳情</strong><span class="portable-source-meta">Tables: GA4 user-demographics-detail, GA4 user-technology-detail</span><p class="portable-source-description-data">GA4只描述官網活躍行為，不作會員母體。</p><pre class="portable-source-query-data" aria-hidden="true"><code>SELECT dimension, category, audience, active_users FROM ga4_demographic_export WHERE event_date BETWEEN DATE &#39;2026-08-01&#39; AND DATE &#39;2026-08-20&#39; AND audience IN (&#39;all_users&#39;,&#39;premium_member&#39;)</code></pre></div></div><div class="portable-table-scroll"><table><caption>造訪裝置 data</caption><thead><tr><th scope="col">裝置</th><th scope="col" class="portable-table-number">觸及占比</th><th scope="col">受眾</th></tr></thead><tbody><tr><td>手機</td><td class="portable-table-number">68.2%</td><td>所有使用者</td></tr><tr><td>手機</td><td class="portable-table-number">66.7%</td><td>Premium會員</td></tr><tr><td>桌機</td><td class="portable-table-number">30.4%</td><td>所有使用者</td></tr><tr><td>桌機</td><td class="portable-table-number">39.2%</td><td>Premium會員</td></tr><tr><td>平板</td><td class="portable-table-number">1%</td><td>所有使用者</td></tr><tr><td>平板</td><td class="portable-table-number">1.5%</td><td>Premium會員</td></tr></tbody></table></div></figure></div>
 <div class="portable-block portable-layout-full" data-artifact-block-id="family_heading" data-artifact-block-type="markdown" data-layout="full"><section class="portable-markdown"><h2>家庭輪廓</h2>
 <p>把會員轉譯成孩子成長階段，支援教育、生活、家庭消費與親子品牌的受眾設定。</p></section></div>
@@ -300,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function () {
 <p>先選擇全會員或 Premium會員，再依性別、年齡與子女數取得提案前的受眾規模參考。</p></section></div>
 <div class="portable-block portable-layout-full" data-artifact-block-id="aida_heading" data-artifact-block-type="markdown" data-layout="full"><section class="portable-markdown"><h2>AIDA 多元受眾探索</h2>
 <p>需要加入更多條件、確認實際交叉人數或建立可觸達名單時，請聯繫會員中心鑫陽，幫您加入 Google Chat [AIDA] 名單小幫手_親子BU；可先開啟 <a href="https://docs.google.com/presentation/d/1VVVxj2JftFp6jMsvIGbCL3gNr_24mjQIWj_RS0xVPHQ/edit?slide=id.g3e10ac2d0dd_0_0#slide=id.g3e10ac2d0dd_0_0" rel="noreferrer">AIDA 名單小幫手說明與教學簡報</a>。</p></section></div>
-<div class="portable-block portable-layout-full" data-artifact-block-id="footer_note" data-artifact-block-type="markdown" data-layout="full"><section class="portable-markdown"><p>資料更新：2026/08/24　｜　預計每週一更新　｜　聚合、去識別化受眾資料</p></section></div></div><section class="portable-sources" aria-labelledby="portable-sources-heading"><h2 id="portable-sources-heading">Sources</h2><ol><li><strong>親子會員樣貌 Dashboard｜Profile</strong><span class="portable-source-meta">looker-studio · 2026-08-20T17:02:16+08:00</span><p>2026/8/20 會員樣貌快照；輪廓比例以各維度有效資料為分母。</p><details class="portable-source-query" open><summary>SQL query</summary><pre><code>SELECT metric, category, value FROM (VALUES (&#39;member_total&#39;,&#39;all&#39;,1377564),(&#39;gender&#39;,&#39;female&#39;,444270),(&#39;gender&#39;,&#39;male&#39;,92167),(&#39;age&#39;,&#39;18-24&#39;,3849),(&#39;age&#39;,&#39;25-34&#39;,34472),(&#39;age&#39;,&#39;35-44&#39;,183501),(&#39;age&#39;,&#39;45-54&#39;,198198),(&#39;age&#39;,&#39;55-64&#39;,49078),(&#39;age&#39;,&#39;65+&#39;,48620),(&#39;child_count&#39;,&#39;1&#39;,188321),(&#39;child_count&#39;,&#39;2&#39;,181097),(&#39;child_count&#39;,&#39;3+&#39;,31217),(&#39;child_count&#39;,&#39;none&#39;,81282)) AS profile(metric, category, value)</code></pre></details></li><li><strong>親子天下 Premium｜Premium會員基本樣貌</strong><span class="portable-source-meta">looker-studio · 2026-08-24T12:51:57+08:00</span><p>2026/8/24 Premium會員快照；子女年齡分組圖仍沿用2026/8/20快照。</p><details class="portable-source-query" open><summary>SQL query</summary><pre><code>SELECT metric, category, value FROM (VALUES (&#39;premium_members&#39;,&#39;all&#39;,19594),(&#39;upgrade_type&#39;,&#39;upgraded&#39;,15914),(&#39;upgrade_type&#39;,&#39;paid&#39;,3680),(&#39;gender&#39;,&#39;female&#39;,3830),(&#39;gender&#39;,&#39;male&#39;,376),(&#39;age&#39;,&#39;20-29&#39;,22),(&#39;age&#39;,&#39;30-39&#39;,674),(&#39;age&#39;,&#39;40-49&#39;,2991),(&#39;age&#39;,&#39;50-59&#39;,689),(&#39;age&#39;,&#39;60+&#39;,74),(&#39;child_count&#39;,&#39;1&#39;,7601),(&#39;child_count&#39;,&#39;2&#39;,4644),(&#39;child_count&#39;,&#39;3+&#39;,823)) AS profile(metric, category, value)</code></pre></details></li><li><strong>Premium會員摘要｜權益母體與服務使用</strong><span class="portable-source-meta">combined · 2026-08-24T12:51:57+08:00</span><p>Premium會員數與升等／付費拆分來自2026/8/24 Premium基本樣貌；近90天服務使用率來自2026/8/17 AIRIS固定母體。</p><details class="portable-source-query" open><summary>SQL query</summary><pre><code>SELECT 19594 AS premium_members, 15914 AS upgraded_members, 3680 AS paid_members, 4166.0 / 19422 AS service_90</code></pre></details></li><li><strong>親子會員樣貌 Dashboard｜會員MAU</strong><span class="portable-source-meta">looker-studio · 2026-08-24T12:51:57+08:00</span><p>最新完整月；排除2026年8月未完月。</p><details class="portable-source-query" open><summary>SQL query</summary><pre><code>SELECT DATE &#39;2026-07-01&#39; AS month, 67146 AS member_mau</code></pre></details></li><li><strong>一般會員數計算</strong><span class="portable-source-meta">google-sheets · 2026-08-24T12:51:57+08:00</span><p>以會員總數扣除最新 Premium會員數；兩者時點不同，僅保留於底稿，不在主畫面呈現。</p><details class="portable-source-query" open><summary>SQL query</summary><pre><code>SELECT 1377564 - 19594 AS general_members</code></pre></details></li><li><strong>親子官網 GA4｜客層詳情：區域</strong><span class="portable-source-meta">ga4 · 2026-08-24T12:51:57+08:00</span><p>GA4過去30天完整區間；區間終點為GA可用的最新完整日。</p><details class="portable-source-query" open><summary>SQL query</summary><pre><code>SELECT region, audience, active_users FROM ga4_user_demographics_detail WHERE event_date BETWEEN DATE &#39;2026-07-25&#39; AND DATE &#39;2026-08-23&#39; AND audience IN (&#39;all_users&#39;,&#39;premium_member&#39;)</code></pre></details></li><li><strong>親子官網 GA4｜客層與技術詳情</strong><span class="portable-source-meta">ga4 · 2026-08-20T23:59:59+08:00</span><p>GA4只描述官網活躍行為，不作會員母體。</p><details class="portable-source-query" open><summary>SQL query</summary><pre><code>SELECT dimension, category, audience, active_users FROM ga4_demographic_export WHERE event_date BETWEEN DATE &#39;2026-08-01&#39; AND DATE &#39;2026-08-20&#39; AND audience IN (&#39;all_users&#39;,&#39;premium_member&#39;)</code></pre></details></li></ol></section></main>
+<div class="portable-block portable-layout-full" data-artifact-block-id="footer_note" data-artifact-block-type="markdown" data-layout="full"><section class="portable-markdown"><p>資料更新：2026/08/24　｜　預計每週一更新　｜　聚合、去識別化受眾資料</p></section></div></div><section class="portable-sources" aria-labelledby="portable-sources-heading"><h2 id="portable-sources-heading">Sources</h2><ol><li><strong>親子會員樣貌 Dashboard｜Profile</strong><span class="portable-source-meta">looker-studio · 2026-08-20T17:02:16+08:00</span><p>2026/8/20 會員樣貌快照；輪廓比例以各維度有效資料為分母。</p><details class="portable-source-query" open><summary>SQL query</summary><pre><code>SELECT metric, category, value FROM (VALUES (&#39;member_total&#39;,&#39;all&#39;,1377564),(&#39;gender&#39;,&#39;female&#39;,444270),(&#39;gender&#39;,&#39;male&#39;,92167),(&#39;age&#39;,&#39;18-24&#39;,3849),(&#39;age&#39;,&#39;25-34&#39;,34472),(&#39;age&#39;,&#39;35-44&#39;,183501),(&#39;age&#39;,&#39;45-54&#39;,198198),(&#39;age&#39;,&#39;55-64&#39;,49078),(&#39;age&#39;,&#39;65+&#39;,48620),(&#39;child_count&#39;,&#39;1&#39;,188321),(&#39;child_count&#39;,&#39;2&#39;,181097),(&#39;child_count&#39;,&#39;3+&#39;,31217),(&#39;child_count&#39;,&#39;none&#39;,81282)) AS profile(metric, category, value)</code></pre></details></li><li><strong>親子天下 Premium｜Premium會員基本樣貌</strong><span class="portable-source-meta">looker-studio · 2026-08-24T12:51:57+08:00</span><p>2026/8/24 Premium會員快照；子女年齡分組圖仍沿用2026/8/20快照。</p><details class="portable-source-query" open><summary>SQL query</summary><pre><code>SELECT metric, category, value FROM (VALUES (&#39;premium_members&#39;,&#39;all&#39;,19594),(&#39;upgrade_type&#39;,&#39;upgraded&#39;,15914),(&#39;upgrade_type&#39;,&#39;paid&#39;,3680),(&#39;gender&#39;,&#39;female&#39;,3830),(&#39;gender&#39;,&#39;male&#39;,376),(&#39;age&#39;,&#39;20-29&#39;,22),(&#39;age&#39;,&#39;30-39&#39;,674),(&#39;age&#39;,&#39;40-49&#39;,2991),(&#39;age&#39;,&#39;50-59&#39;,689),(&#39;age&#39;,&#39;60+&#39;,74),(&#39;child_count&#39;,&#39;1&#39;,7601),(&#39;child_count&#39;,&#39;2&#39;,4644),(&#39;child_count&#39;,&#39;3+&#39;,823)) AS profile(metric, category, value)</code></pre></details></li><li><strong>Premium會員摘要｜權益母體與服務使用</strong><span class="portable-source-meta">combined · 2026-08-24T12:51:57+08:00</span><p>Premium會員數與升等／付費拆分來自2026/8/24 Premium基本樣貌；近90天服務使用率來自2026/8/17 AIRIS固定母體。</p><details class="portable-source-query" open><summary>SQL query</summary><pre><code>SELECT 19594 AS premium_members, 15914 AS upgraded_members, 3680 AS paid_members, 4166.0 / 19422 AS service_90</code></pre></details></li><li><strong>親子會員樣貌 Dashboard｜會員MAU</strong><span class="portable-source-meta">looker-studio · 2026-08-24T12:51:57+08:00</span><p>最新完整月；排除2026年8月未完月。</p><details class="portable-source-query" open><summary>SQL query</summary><pre><code>SELECT DATE &#39;2026-07-01&#39; AS month, 67146 AS member_mau</code></pre></details></li><li><strong>一般會員數計算</strong><span class="portable-source-meta">google-sheets · 2026-08-24T12:51:57+08:00</span><p>以會員總數扣除最新 Premium會員數；兩者時點不同，僅保留於底稿，不在主畫面呈現。</p><details class="portable-source-query" open><summary>SQL query</summary><pre><code>SELECT 1377564 - 19594 AS general_members</code></pre></details></li><li><strong>GA4｜全站台 Member 與親子官網 Premium 活躍區域</strong><span class="portable-source-meta">ga4 · 2026-08-24T12:51:57+08:00</span><p>2026/7/25–8/23；全會員活躍者來自全站台 GA Member 目標對象，Premium活躍者來自親子官網 GA Premium 身分比較。</p><details class="portable-source-query" open><summary>SQL query</summary><pre><code>SELECT region, &#39;member&#39; AS audience, active_users FROM ga4_fullsite_user_demographics_detail WHERE event_date BETWEEN DATE &#39;2026-07-25&#39; AND DATE &#39;2026-08-23&#39; AND audience_id=&#39;2&#39; UNION ALL SELECT region, &#39;premium&#39; AS audience, active_users FROM ga4_parenting_user_demographics_detail WHERE event_date BETWEEN DATE &#39;2026-07-25&#39; AND DATE &#39;2026-08-23&#39; AND member_status IN (&#39;premium_member&#39;,&#39;subscriber_member&#39;,&#39;subscriber_member_year&#39;,&#39;subscriber_member_month&#39;)</code></pre></details></li><li><strong>親子官網 GA4｜客層與技術詳情</strong><span class="portable-source-meta">ga4 · 2026-08-20T23:59:59+08:00</span><p>GA4只描述官網活躍行為，不作會員母體。</p><details class="portable-source-query" open><summary>SQL query</summary><pre><code>SELECT dimension, category, audience, active_users FROM ga4_demographic_export WHERE event_date BETWEEN DATE &#39;2026-08-01&#39; AND DATE &#39;2026-08-20&#39; AND audience IN (&#39;all_users&#39;,&#39;premium_member&#39;)</code></pre></details></li></ol></section></main>
 <script data-data-analytics-portable-source-tooltips="true">(() => {
   const RUNTIME_FLAG = "__dataAnalyticsPortableSourceTooltipsInitialized";
   const READY_ATTRIBUTE = "data-portable-source-tooltips-ready";
@@ -641,124 +662,136 @@ document.addEventListener('DOMContentLoaded', function () {
 })();</script>
 <div id="data-analytics-portable-reader" aria-hidden="true" inert></div>
 <template id="data-analytics-portable-artifact-payload-source" data-compression="gzip-base64">
-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
-kUsTZzGOH67Fb70W3/w/2N3rOax7AAA=
+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
+7f8BEVxdGPGHAAA=
 </template>
 <template id="data-analytics-portable-reader-runtime-source" data-compression="gzip-base64">
 H4sIAAAAAAACE+y9a3fjNrYg+v38CilTV0MeQ4pk15MyyqfiR6e665VyVdLVjseESUhCTIEKCNnl
